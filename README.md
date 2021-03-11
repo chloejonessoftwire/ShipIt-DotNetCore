@@ -5,7 +5,7 @@ Open the project in VSCode.
 VSCode should automatically set up and install everything you'll need apart from the database connection!
 
 ### Setting up the Database.
-Create 2 new postgres databases - one for the main program and one for our test database.
+Create two new postgres databases - one for the main program and one for our test database.
 Ask a team member for a dump of the production databases to create and populate your tables.
 
 Then for each of the projects, add a `.env` file at the root of the project.

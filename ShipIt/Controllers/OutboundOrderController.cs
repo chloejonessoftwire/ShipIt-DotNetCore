@@ -23,7 +23,7 @@ namespace ShipIt.Controllers
         }
 
         [HttpPost("")]
-        public void Post([FromBody] OutboundOrderRequestModel request)
+        public JsonResult Post([FromBody] OutboundOrderRequestModel request)
         {
             Log.Info(String.Format("Processing outbound order: {0}", request));
 
@@ -40,9 +40,11 @@ namespace ShipIt.Controllers
             var productDataModels = _productRepository.GetProductsByGtin(gtins);
             var products = productDataModels.ToDictionary(p => p.Gtin, p => new Product(p));
 
-            var lineItems = new List<StockAlteration>();
+            var lineItems = new List<StockAlteration>(); //stock contains product id and quantity
             var productIds = new List<int>();
             var errors = new List<string>();
+            //float weight = 0 
+            float weight = 0;
 
             foreach (var orderLine in request.OrderLines)
             {
@@ -55,8 +57,16 @@ namespace ShipIt.Controllers
                     var product = products[orderLine.gtin];
                     lineItems.Add(new StockAlteration(product.Id, orderLine.quantity));
                     productIds.Add(product.Id);
+                    weight+= product.Weight*orderLine.quantity; 
+
+                    //find weight for product of product.id, multiply by orderLine quantity 
+                    //weight += product.id.weight * orderline quantity
                 }
             }
+            float weightkg = weight/1000;
+            var noTrucks = Math.Ceiling(weight/2000);
+            Console.WriteLine("QQQQQQQQQQQQQQQQQ");
+            Console.WriteLine("Number of trucks: " + noTrucks);
 
             if (errors.Count > 0)
             {
@@ -94,6 +104,10 @@ namespace ShipIt.Controllers
             }
 
             _stockRepository.RemoveStock(request.WarehouseId, lineItems);
+           
+            return new JsonResult(noTrucks);
+
+
         }
     }
 }
