@@ -64,8 +64,7 @@ namespace ShipIt.Controllers
                 }
             }
             float weightkg = weight/1000;
-            var noTrucks = Math.Ceiling(weight/2000);
-            Console.WriteLine("QQQQQQQQQQQQQQQQQ");
+            var noTrucks = Math.Ceiling(weightkg/2000);
             Console.WriteLine("Number of trucks: " + noTrucks);
 
             if (errors.Count > 0)

@@ -7,6 +7,8 @@ using ShipIt.Models.ApiModels;
 using ShipIt.Models.DataModels;
 using ShipIt.Repositories;
 
+
+
 namespace ShipIt.Controllers
 {
     [Route("orders/inbound")]
@@ -30,24 +32,57 @@ namespace ShipIt.Controllers
         [HttpGet("{warehouseId}")]
         public InboundOrderResponse Get([FromRoute] int warehouseId)
         {
+            var functionStart = DateTime.Now;
+            
             Log.Info("orderIn for warehouseId: " + warehouseId);
 
+            var a = DateTime.Now;            
             var operationsManager = new Employee(_employeeRepository.GetOperationsManager(warehouseId));
+            var b = DateTime.Now;
+            var timeTaken = b-a;
+            Console.WriteLine(timeTaken);
 
             Log.Debug(String.Format("Found operations manager: {0}", operationsManager));
+            
+            var stockListStart = DateTime.Now;
+            var allStock = _stockRepository.GetRequiredStock(warehouseId);
+            
+            // var allStock = _stockRepository.GetStockByWarehouseId(warehouseId); 
+            // var allStock = _stockRepository.GetRequiredStock(warehouseId);
 
-            var allStock = _stockRepository.GetStockByWarehouseId(warehouseId);
-
+            
             Dictionary<Company, List<InboundOrderLine>> orderlinesByCompany = new Dictionary<Company, List<InboundOrderLine>>();
             foreach (var stock in allStock)
             {
-                Product product = new Product(_productRepository.GetProductById(stock.ProductId));
-                if(stock.held < product.LowerThreshold && !product.Discontinued)
-                {
-                    Company company = new Company(_companyRepository.GetCompany(product.Gcp));
+                // var productStart = DateTime.Now;
+                // Product product = new Product(_productRepository.GetProductById(stock.ProductId));
+                // ProductandCompany productcompany = new p
+                // var productEnd = DateTime.Now;
+                // var timeTakenProduct = productEnd - productStart; 
+                // Console.WriteLine("Product Time Taken: "+ timeTakenProduct);
+                
+                // if(stock.held < product.LowerThreshold && !product.Discontinued)
+                // {
+                    // var companyStart = DateTime.Now;
+                    Company company = new Company()
+                    {
+                        Gcp = stock.Gcp,
+                        Name = stock.Name,
+                        Addr2 = stock.Addr2,
+                        Addr3 = stock.Addr3,
+                        Addr4 = stock.Addr4,
+                        PostalCode = stock.PostalCode,
+                        City = stock.City,
+                        Tel = stock.Tel,
+                        Mail = stock.Mail
+                    };
+                    
+                    // var companyEnd = DateTime.Now;
+                    // var timeTakenCompany = companyEnd - companyStart; 
+                    // Console.WriteLine("Company Time Taken: "+ timeTakenCompany);
 
-                    var orderQuantity = Math.Max(product.LowerThreshold * 3 - stock.held, product.MinimumOrderQuantity);
-
+                    var orderQuantity = Math.Max(stock.LowerThreshold * 3 - stock.held, stock.MinimumOrderQuantity);
+                    var orderLinesStart = DateTime.Now;
                     if (!orderlinesByCompany.ContainsKey(company))
                     {
                         orderlinesByCompany.Add(company, new List<InboundOrderLine>());
@@ -56,12 +91,21 @@ namespace ShipIt.Controllers
                     orderlinesByCompany[company].Add( 
                         new InboundOrderLine()
                         {
-                            gtin = product.Gtin,
-                            name = product.Name,
+                            gtin = stock.Gtin,
+                            name = stock.Name,
                             quantity = orderQuantity
                         });
-                }
-            }
+                    var orderLinesEnd = DateTime.Now;
+                    var orderLineTime = orderLinesEnd - orderLinesStart;
+                    // Console.WriteLine("Order Lines Time Taken : " + orderLineTime);
+
+                // }
+                
+            }  
+             var stockListEnd = DateTime.Now;
+            var timeTakenStock = stockListEnd - stockListStart;
+            Console.WriteLine("Stock List Time Taken: " + timeTakenStock);
+            
 
             Log.Debug(String.Format("Constructed order lines: {0}", orderlinesByCompany));
 
@@ -72,6 +116,11 @@ namespace ShipIt.Controllers
             });
 
             Log.Info("Constructed inbound order");
+            
+           
+            var functionEnd=DateTime.Now;
+            var functionTimeTaken= functionEnd - functionStart;
+            Console.WriteLine("Total time taken:" + functionTimeTaken );
 
             return new InboundOrderResponse()
             {
@@ -79,6 +128,7 @@ namespace ShipIt.Controllers
                 WarehouseId = warehouseId,
                 OrderSegments = orderSegments
             };
+            
         }
 
         [HttpPost("")]
